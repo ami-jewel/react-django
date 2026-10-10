@@ -1,0 +1,53 @@
+name: Build and Deploy React App via SSH
+
+on:
+  push:
+    branches: [ "main" ] # আপনার মূল ব্রাঞ্চের নাম (main বা master)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies and Build React
+        run: |
+          npm install
+          npm run build
+
+      - name: Copy Build Files to cPanel via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "dist/*"
+          target: "/home/reactgreenbdhost/react-project/"
+
+      - name: Run Django Collectstatic and Restart Python App via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/reactgreenbdhost/react-project
+            # dist ফোল্ডারের index.html টেমপ্লেটে এবং assets স্ট্যাটিক্সে মুভ করা
+            cp -rf dist/index.html templates/
+            rm -rf static/assets
+            cp -rf dist/assets static/
+            
+            # জ্যাঙ্গো স্ট্যাটিক কালেকশন
+            source /home/reactgreenbdhost/virtualenv/react-project/3.10/bin/activate
+            python manage.py collectstatic --noinput
+            
+            # ক্লাউডলিনাক্স পাইথন অ্যাপ টাচ/রিস্টার্ট করা
+            touch tmp/restart.txt
