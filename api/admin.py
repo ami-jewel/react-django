@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import Item
+from .models import HomePageContent, AboutPage, Product, CSRPage, ContactInfo
 
-# Register your models here.
-@admin.register(Item)
-class ItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'created_at')
-    search_fields = ('name', 'description')
+admin.site.register(HomePageContent)
+admin.site.register(AboutPage)
+admin.site.register(Product)
+admin.site.register(CSRPage)
+admin.site.register(ContactInfo)
